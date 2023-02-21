@@ -1,0 +1,79 @@
+---
+title: "Activity 6"
+author: "Name here"
+output: pdf_document
+---
+
+```{r, include =F}
+library(tidyverse)
+library(rjags)
+```
+
+
+### Q1. Steps of Bayesian Data Analysis
+
+
+Recall that for a Bayesian analysis we will follow these steps. Consider steps 1 - 3 for your project. (Might be best to focus on this question last)
+
+1. **Identify the data relevant to the research questions.** What are the measurement scales of the data? Which data variables are to be predicted, and which data variables are supposed to act as predictors?
+\vfill
+2. **Define a descriptive model for the relevant data.** The mathematical form and its parameters should be meaningful and appropriate to the theoretical purposes of the analysis.
+\vfill
+3. **Specify a prior distribution on the parameters.** The prior must pass muster with the audience of the analysis, such as skeptical scientists.
+\vfill
+4. **Use Bayesian inference to re-allocate credibility across parameter values.** Interpret the posterior distribution with respect to theoretically meaningful issues (assuming that the model is a reasonable description of the data; see next step).
+\vfill
+5. **Check that the posterior predictions mimic the data with reasonable accuracy (i.e., conduct a 'posterior predictive check').** If not, then consider a different descriptive model.
+\vfill
+
+
+### Q2. JAGS code modification
+
+Recall the code from the weekly module.
+
+```{r, echo = T}
+model_string <- "model{
+  # Likelihood
+  z ~ dbinom(theta, N)
+
+  # Prior
+  theta ~ dbeta(alpha, beta)
+  alpha <- 1 # prior successes
+  beta <- 1 # prior failures
+}"
+```
+
+Rewrite this in a way that alpha and beta can be inputed as data elements. Then re run the analyses. Recall that `z = 392` and `N = 869` when estimating the probability of a house in Seattle having more than two bedrooms. 
+
+### Q3. JAGS Code object
+
+Following the previous question, use the posterior samples `posterior_sample[[1]]` to create a density plot of the posterior distribution and overlay the true posterior density.
+
+
+### Q4. Synthetic Data
+
+#### a. 
+Simulate data from a normal process (mean .75, sd = 10) for 1000 trials.
+
+#### b. 
+State priors for $\mu$ and $\sigma$
+
+
+#### c. 
+Given this data and priors, run jags code to estimate posterior distributions for $\mu$ and $\sigma$
+
+#### d. 
+
+Compare your results from part c with what you'd expect. 
+
+### Q5. Regression
+
+Assume we will use the Seattle housing dataset, but will now focus on housing price and use `sqft_living` as a predictor in a regression model.
+
+
+### a. Identify a descriptive statistical model for the relevant data. Then interpret the statistical parameters in that model.
+
+
+
+### b. Specify a prior distribution for all parameters in the model.
+
