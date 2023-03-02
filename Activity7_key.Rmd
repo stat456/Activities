@@ -68,7 +68,7 @@ State and Justify Priors Used for your  Model
 
 There will need to be three similar priors for $\beta_1, \beta_2$, and $\beta_3$. With little knowledge of salaries of these three job types, I'll use fairly uninformative priors. In particular, these will be Normal priors centered at \$50,000, with standard deviation of \$25,000. The net result is that most of my prior mass will be between 0 and 100k.
 
-I'll use an informative inverse gamma prior on $\sigma^2$ with values .01 and .01.
+Here we will use a uniform prior, but you could also use a  gamma / inverse gamma prior on $\sigma^2$.
 
 #### e. 
 
