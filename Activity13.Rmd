@@ -1,0 +1,56 @@
+---
+title: "Week 13 Activity: GLMs"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+set.seed(04102023)
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(rjags)
+library(tidyverse)
+```
+
+  
+Now reconsider the willow tit dataset and consider modeling not just the presence / absence of birds, but directly modeling the number of birds observed in each spatial region.
+
+
+
+```{r, fig.align='center'}
+birds <- read.csv('http://math.montana.edu/ahoegh/teaching/stat491/data/willowtit2013_count.csv')
+head(birds) %>% kable()
+```
+\vfill
+
+This dataset contains 242 sites and 6 variables:  
+
+    - siteID, a unique identifier for the site, some were not sampled during this period 
+    - elev, mean elevation of the quadrant in meters 
+    - rlength, the length of the route walked by the birdwatcher, in kilometers 
+    - forest, percent forest cover 
+    - bird.count, number of birds identified 
+    - searchDuration, time birdwatcher spent searching the site, in minutes
+
+
+
+#### 1. Data Visualization
+Create two figures that explore `bird.count` as a function of forest cover percentage (`forest`) and elevation (`elev`).
+
+#### 2. Model Specification
+
+Using a Poisson regression model, clearly write out the model to understand how forest cover and elevation impact bird count.
+\vfill
+
+#### 3. Priors
+Describe and justify the necessary priors for this model.
+
+
+\vfill
+
+#### 4.  Fit MCMC
+Fit the JAGS code for this model. 
+
+#### 5. Summarize inferences from model
+Talk about the model and discuss which and how predictor variables influence the observed bird count. Create figures that show your fitted model for elevation and/or forest coverage.
+
+
