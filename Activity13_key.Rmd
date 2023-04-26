@@ -1,0 +1,166 @@
+---
+title: "Week 13 Activity: GLMs"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+set.seed(04102023)
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(rjags)
+library(tidyverse)
+```
+
+  
+Now reconsider the willow tit dataset and consider modeling not just the presence / absence of birds, but directly modeling the number of birds observed in each spatial region.
+
+
+
+```{r, fig.align='center'}
+birds <- read.csv('http://math.montana.edu/ahoegh/teaching/stat491/data/willowtit2013_count.csv')
+head(birds) %>% kable()
+```
+\vfill
+
+This dataset contains 242 sites and 6 variables:  
+
+    - siteID, a unique identifier for the site, some were not sampled during this period 
+    - elev, mean elevation of the quadrant in meters 
+    - rlength, the length of the route walked by the birdwatcher, in kilometers 
+    - forest, percent forest cover 
+    - bird.count, number of birds identified 
+    - searchDuration, time birdwatcher spent searching the site, in minutes
+
+
+
+#### 1. Data Visualization
+Create two figures that explore `bird.count` as a function of forest cover percentage (`forest`) and elevation (`elev`) data visualization that 
+
+```{r}
+birds %>% ggplot(aes(y = bird.count, x = forest)) + geom_point(alpha = .1) + 
+  geom_smooth(method ='loess', formula = "y ~ x", se = F) + theme_bw() +
+  ggtitle('Willow Tit count by % forest cover') + 
+  ylab('Number of Birds') + xlab("% Forest Cover") + 
+  labs(caption = 'Blue curve is loess fit')
+birds %>% ggplot(aes(y = bird.count, x = elev)) + geom_point(alpha = .1) + 
+  geom_smooth(method ='loess', formula = "y ~ x", se = F) + theme_bw() +
+  ggtitle('Willow Tit count by elevation') + 
+  ylab('Number of Birds') + xlab("Elevation (Meters)") + 
+  labs(caption = 'Blue curve is loess fit')
+```
+
+
+#### 2. Model Specification
+
+Using a Poisson regression model, clearly write out the model to understand how forest cover and elevation impact bird count.
+\vfill
+
+\begin{align}
+count_i &\sim Poisson(\mu_i)\\
+\log(\mu_i) &= \beta_0 + \beta_1 x_{elev} + \beta_2 x_{elev}^2  + \beta_3 x_{forest} + \beta_4 x_{forest}^2 
+\end{align}
+
+Note: variables will be standardized for this analysis.
+
+#### 3. Priors
+Describe and justify the necessary priors for this model.
+
+*I anticipate these values being small, so normal priors centered at zero with variance of 100 will be sufficient and minimally informative)*
+
+\vfill
+
+#### 4.  Fit MCMC
+Fit the JAGS code for this model. You will have to put this together following the specification in the previous examples, but the following statement can be used for the sampling model portion.
+
+
+```{r}
+model.string <- 'model {
+  for (i in 1:Ntotal) {
+    y[i] ~ dpois(mu[i])
+    mu[i] <- exp(beta0 + sum( beta[1:Nx] * x[i,1:Nx] ))
+  }
+  # priors inserted here
+  beta0 ~ dnorm(0,1/5^2)
+  for (j in 1:Nx){
+    beta[j] ~ dnorm(0, 1/100^2)
+  }
+}'
+
+
+birds <- birds %>% 
+  mutate(std_elev = (elev - mean(elev)) / sd(elev),
+         std_elev_sq = std_elev^2,
+         std_forest = (forest - mean(forest)) / sd(forest),
+         std_forest_sq = std_forest^2)
+
+
+# Fit Model
+jags.poiss <-  jags.model(textConnection(model.string),                          
+                data=list(y=birds$bird.count, Ntotal=nrow(birds), Nx = 4, 
+                x= birds[,c('std_elev','std_elev_sq','std_forest','std_forest_sq')]), 
+                             n.chains =2, n.adapt = 5000)
+
+update(jags.poiss, 10000)
+samples <- coda.samples(jags.poiss, variable.names = c('beta','beta0'), n.iter = 10000) 
+
+summary(samples)
+
+summary(glm(bird.count ~ std_elev + std_elev_sq + std_forest + std_forest_sq, family=poisson, data=birds))
+```
+
+
+#### 5. Summarize inferences from model
+Talk about the model and discuss which and how predictor variables influence the observed bird count.
+
+**With squared terms, the interpretation of coefficients is a little more complicated. However, we can start with the intercept.**
+
+- $\beta_0$: can be interpreted as the expected bird count for an average elevation (`r round(mean(birds$elev))` meters) and average forest coverage (`r round(mean(birds$forest))`%). In particular exp($\beta_0$) = `r mean(exp(c(samples[[1]][,'beta0'], samples[[2]][,'beta0'])))` (`r round(quantile(exp(c(samples[[1]][,'beta0'], samples[[2]][,'beta0'])), probs =.025),1)`, `r round(quantile(exp(c(samples[[1]][,'beta0'], samples[[2]][,'beta0'])), probs =.975),1)`)
+
+- For an average forest coverage, the mean impact of elevation can be visualized as
+
+```{r, echo = F}
+beta1 <- matrix(c(samples[[1]][,"beta[1]"], samples[[2]][,"beta[1]"]), nrow = 20000, ncol = 1)
+beta2 <- matrix(c(samples[[1]][,"beta[2]"], samples[[2]][,"beta[2]"]), nrow = 20000, ncol = 1)
+
+elev_range <- seq(min(birds$elev), max(birds$elev), length.out = 500)
+elev_range_std <- matrix((elev_range - mean(birds$elev)) / sd(birds$elev), nrow = 1, ncol = 500)
+
+matrix_curves <- exp(beta1 %*% elev_range_std + beta2 %*% elev_range_std^2)
+mean_fit <- colMeans(matrix_curves)
+low_fit <- apply(matrix_curves,2, quantile, probs = .025)
+upper_fit <- apply(matrix_curves,2, quantile, probs = .975)
+
+
+tibble(x = elev_range, y = mean_fit, low_fit = low_fit, upper_fit = upper_fit) %>%
+  ggplot(aes(y = y, x = x)) + geom_line() + theme_bw() +
+  geom_point(data = birds, aes(y = bird.count, x = elev), inherit.aes = F, color = 'blue', alpha = .1) +
+  xlab('Elevation (m)') + ylab('Bird Count') +
+  ggtitle("Estimated bird count with average forest coverage") +
+  geom_line(aes(y = low_fit), color = 'gray', linetype = 2) + 
+  geom_line(aes(y = upper_fit), color = 'gray', linetype = 2) 
+```
+
+- For an average elevation, the impact of forest coverage can be visualized as
+
+```{r, echo = F}
+beta3 <- matrix(c(samples[[1]][,"beta[3]"], samples[[2]][,"beta[3]"]), nrow = 20000, ncol = 1)
+beta4 <- matrix(c(samples[[1]][,"beta[4]"], samples[[2]][,"beta[4]"]), nrow = 20000, ncol = 1)
+
+forest_range <- seq(min(birds$forest), max(birds$forest), length.out = 100)
+forest_range_std <- matrix((forest_range - mean(birds$forest)) / sd(birds$forest), nrow = 1, ncol = 100)
+
+matrix_curves <- exp(beta3 %*% forest_range_std + beta4 %*% forest_range_std^2)
+mean_fit <- colMeans(matrix_curves)
+low_fit <- apply(matrix_curves,2, quantile, probs = .025)
+upper_fit <- apply(matrix_curves,2, quantile, probs = .975)
+
+
+tibble(x = forest_range, y = mean_fit, low_fit = low_fit, upper_fit = upper_fit) %>%
+  ggplot(aes(y = y, x = x)) + geom_line() + theme_bw() +
+  geom_point(data = birds, aes(y = bird.count, x = forest), inherit.aes = F, color = 'blue', alpha = .1) +
+  xlab('Forest Coverage (%)') + ylab('Bird Count') +
+  ggtitle("Estimated bird count with average elevation") +
+  geom_line(aes(y = low_fit), color = 'gray', linetype = 2) + 
+  geom_line(aes(y = upper_fit), color = 'gray', linetype = 2) 
+```
+
