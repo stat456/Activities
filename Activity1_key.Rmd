@@ -1,0 +1,145 @@
+---
+title: "STAT 456 - Intro Activity"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Bayesian Thought Experiment
+
+There are two foundational elements in a Bayesian Analysis:
+
+1. Bayesian inference is a re-allocation of credibility across possibilities
+2. These possibilities are parameter values in meaningful mathematical models
+
+### Guess Who Exercise
+Consider the game Guess Who, where the goal is to ask questions to identify an opposing player's character.
+
+![Guess Who Faces](images/guesswho.jpg)
+
+\pagebreak
+
+- Given the line up of suspects above, draw you belief (as a probability) for each character. Note these should sum to one and constitute the first foundation element in Bayesian Analysis. 
+
+- The first set of probabilities are known as *prior* probabilities.
+
+```{r echo=FALSE}
+players <- c('Megan','Donna','Clark','Ally','Grace','Wyatt')
+label <- 1:6
+prob <- rep(1/6,6)
+plot(label,prob, type='h', axes=F, ylab='Probability', xlab='Character', ylim=c(0,1), lwd=8)
+box()
+axis(1, labels = players, at = 1:6)
+axis(2)
+```
+
+\vfill
+
+> Follow the conversation and update your probabilities accordingly
+
+> - **You**: Does your character have a hat
+> - **Your adversary**: Yes
+
+```{r echo=FALSE}
+players <- c('Megan','Donna','Clark','Ally','Grace','Wyatt')
+label <- 1:6
+prob <- c(0,1/3,0,1/3,1/3,0)
+plot(label,prob, type='h', axes=F, ylab='Probability', xlab='Character', ylim=c(0,1), lwd=8)
+box()
+axis(1, labels = players, at = 1:6)
+axis(2)
+```
+
+\newpage
+
+> Follow the conversation and update your probabilities accordingly, again
+
+> - **You**: Is your character wearing glasses
+> - **Your adversary**: Yes
+
+```{r echo=FALSE}
+players <- c('Megan','Donna','Clark','Ally','Grace','Wyatt')
+label <- 1:6
+prob <- c(0,1/2,0,1/2,0,0)
+plot(label,prob, type='h', axes=F, ylab='Probability', xlab='Character', ylim=c(0,1), lwd=8)
+box()
+axis(1, labels = players, at = 1:6)
+axis(2)
+```
+
+> Follow the conversation and update your probabilities accordingly, again
+
+> - **You**: Is your character wearing purple glasses
+> - **Your adversary**: No
+
+```{r echo=FALSE}
+players <- c('Megan','Donna','Clark','Ally','Grace','Wyatt')
+label <- 1:6
+prob <- c(0,1,0,0,0,0)
+plot(label,prob, type='h', axes=F, ylab='Probability', xlab='Character', ylim=c(0,1), lwd=8)
+box()
+axis(1, labels = players, at = 1:6)
+axis(2)
+```
+
+\newpage
+
+
+
+### Ex. Rolling a Die
+Now consider a similar example using a die. Suppose our goal is to determine the probability of the die landing on 6. Now constuct your prior belief for this die. 
+
+Note this is different from the previous example. 
+
+- We are now interested in estimating the probability of rolling a 6, rather than if the character is one of 6 possibilities.
+- We are still thinking in a distribution, so the total probability (or credibility) should be allocated across the set of possible values.
+
+
+```{r echo=FALSE, out.width='200px', fig.align='center'}
+label <- 1:6
+prob <- c(0,1/2,0,1/2,0,0)
+plot(label,prob, type='n', axes=F, ylab='', xlab='Probability of Rolling a 6', ylim=c(0,1), lwd=8)
+box()
+axis(1, labels = c(0,.25,.50,.75,1), at = seq(1,6,length.out=5))
+```
+ \vfill
+ 
+
+Suppose we observe three rolls, now update your beliefs.
+
+```{r echo=FALSE, out.width='200px', fig.align='center'}
+label <- 1:6
+prob <- c(0,1/2,0,1/2,0,0)
+plot(label,prob, type='n', axes=F, ylab='', xlab='Probability of Rolling a 6', ylim=c(0,1), lwd=8)
+box()
+axis(1, labels = c(0,.25,.50,.75,1), at = seq(1,6,length.out=5))
+```
+\vfill
+
+Finally suppose we observe 100 more rolls, now update your beliefs.
+
+```{r echo=FALSE, out.width='200px', fig.align='center'}
+label <- 1:6
+prob <- c(0,1/2,0,1/2,0,0)
+plot(label,prob, type='n', axes=F, ylab='', xlab='Probability of Rolling a 6', ylim=c(0,1), lwd=8)
+box()
+axis(1, labels = c(0,.25,.50,.75,1), at = seq(1,6,length.out=5))
+```
+
+\newpage
+
+
+### Key Points From This Activity
+
+- *Thinking with distributions:*
+A key philosophical idea of Bayesian statistics focuses on uncertainty and thinking about the complete set of possibilities and their associated probabilities. This idea of thinking with a distribution explicitly be seen in the Guess Who example. Furthermore, this idea will enable probabilistic computations such as "What is the probability that the opponents character is wearing a hat?"
+
+
+- *Specifying a prior distribution:*
+The starting point for any Bayesian analysis is a prior distribution. Some general principles for prior distributions are to put positive probability on any plausible set and to avoid imparting too much information with a prior distribution.
+
+- *Update distribution with additional data or evidence:*
+Given a prior distribution and additional information (such as the opponent's character is wearing a hat), we can update our prior distribution. This updated distribution is known as a posterior distribution. This process can continue sequentially as more and more information is included, the posterior distribution updates accordingly.
+\vfill
