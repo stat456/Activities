@@ -1,6 +1,6 @@
 ---
 title: "Activity 3"
-format: gfm
+format: pdf
 editor: visual
 ---
 
