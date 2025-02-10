@@ -1,0 +1,229 @@
+---
+title: "Activity 4"
+format: gfm
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+### Week 3 Recap
+
+-   Thinking with distributions (intervals, mean, dispersion)
+
+-   Monte Carlo Techniques
+
+-   Probability mass functions and probability density functions
+
+------------------------------------------------------------------------
+
+### Week 4 Overview: Conditional Probability and Bayes Rule
+
+-   Marginal, Joint, Conditional Probability
+
+-   Bayes Rule
+
+-   Bayes Rule with data
+
+------------------------------------------------------------------------
+
+
+The highest density interval (HDI) corresponds to the shortest possible interval, for a specified probability level. What would be the 95% HDI for the following discrete distributions? Note with discrete distributions you can calculate these exactly, but we can also use `hdi` from `HDInterval` for approximate, Monte Carlo - based intervals
+
+#### 1a. Poisson(4)
+
+```{r, message = F}
+library(tidyverse)
+library(knitr)
+x_seq <- 0:20
+pois4 <- tibble(x = x_seq, prob = dpois(x_seq,4)) 
+
+pois4 %>%
+  ggplot(aes(x=x,y=prob)) + geom_col() + theme_bw()
+
+pois4 |>
+  kable()
+
+pois4 |>
+  filter(x > 0, x <= 8) |>
+  summarize(sum(prob))
+
+```
+
+This would be [1, 8]
+
+```{r}
+library(HDInterval)
+
+hdi(rpois(100000,4))
+
+```
+
+
+#### 1b. NB(4, 100)
+
+```{r}
+x_seq <- 0:20
+nb4 <- tibble(x = x_seq, prob = dnbinom(x_seq,mu =4, size = 100)) 
+
+nb4 %>%
+  ggplot(aes(x=x,y=prob)) + geom_col() + theme_bw()
+
+nb4 |>
+  kable()
+
+nb4 |>
+  filter(x > 0, x <= 8) |>
+  summarize(sum(prob))
+```
+
+This would be approximately [1,8]
+
+
+```{r}
+hdi(rnbinom(100000, mu =4, size = 100))
+```
+
+#### 1c. NB(4, 1)
+
+```{r}
+x_seq <- 0:20
+nb4_1 <- tibble(x = x_seq, prob = dnbinom(x_seq,mu =4, size = 1)) 
+nb4_1 %>%
+  ggplot(aes(x=x,y=prob)) + geom_col() + theme_bw()
+
+nb4_1 |> kable()
+
+nb4_1 |>
+  filter(x <= 13) |>
+  summarize(sum(prob))
+```
+
+
+This would be approximately [0, 13]
+
+```{r}
+hdi(rnbinom(100000, mu =4, size = 1))
+```
+
+#### 1d. Pois(6)
+
+```{r}
+x_seq <- 0:20
+pois6 <- tibble(x = x_seq, prob = dpois(x_seq,6)) 
+
+pois6 %>%
+  ggplot(aes(x=x,y=prob)) + geom_col() + theme_bw()
+
+pois6 |>
+  kable()
+
+pois6 |>
+  filter(x >=2 , x <= 11) |>
+  summarize(sum(prob))
+
+```
+
+This would be [2, 11]
+
+```{r}
+library(HDInterval)
+
+hdi(rpois(100000,6))
+
+```
+
+---
+
+Use a dataset containing homes in the Seattle, WA area [http://www.math.montana.edu/ahoegh/teaching/stat408/datasets/SeattleHousing.csv](http://www.math.montana.edu/ahoegh/teaching/stat408/datasets/SeattleHousing.csv) for this question.
+
+```{r}
+seattle <- read_csv('http://www.math.montana.edu/ahoegh/teaching/stat408/datasets/SeattleHousing.csv') %>%
+  mutate(bath_category = case_when(
+    bathrooms <= 2 ~ '0 - 2',
+    bathrooms > 2 & bathrooms <=4 ~ '2 - 4',
+    bathrooms > 4 ~ 'more than 4'),
+    bed_category = case_when(
+    bedrooms == 0 ~ '0',
+    bedrooms > 0 & bedrooms <= 2 ~ '1-2',
+    bedrooms > 2 & bedrooms <= 4 ~ '3-4',
+    bedrooms > 4 ~ 'more than 5'
+   )
+  )
+```
+
+
+Use the two-by-two table containing bathrooms (grouped as: 0 - 2, more than 2 - 4, more than 4) and bedrooms (0, 1-2, 3-4, 5 or more).
+```{r}
+table(seattle$bath_category, seattle$bed_category) 
+```
+
+
+```{r}
+round(table(seattle$bath_category, seattle$bed_category) / nrow(seattle),3)
+```
+
+
+#### 2a.
+Compute marginal probability of having 0 - 2 bathrooms
+
+The probability is `r .003 + .148 + .382 + .015`
+
+#### 2b. 
+Compute joint probability of having 0 - 2 bathroom and  3-4 bedrooms
+
+The probability is .382
+
+#### 2c. 
+Compute conditional probability of having 3-4 bedrooms given that it has 0 - 2 bathrooms
+
+The probability is `r round(.382/ (.003 + .148 + .382 + .015),3)`
+
+
+#### 2d. 
+Are bathrooms and bedrooms independent? Why or why not.
+
+*No the probability of the number of bedrooms depends on the number of bathrooms. In particular there are different values for parts a and c.*
+
+
+---
+
+(DBDA 4.5B)
+
+Use a normal curve to describe the following belief. Suppose you believe that women's heights follow a bell-shaped distribution, centered at 162 cm with about 2/3rds of all women having heights between 147 and 177. What should be the $\mu$ and $\sigma$ values?
+
+- $\mu$ = 162
+- $\sigma$ = 15 (as about 2/3rd of observations fall within 1 sd of the mean)
+
+---
+
+Assume your roommate has taken, and tested positive, for an at home antigen Covid test. Let's assume the test was from Cochrane (data)[https://www.cochrane.org/CD013705/INFECTN_how-accurate-are-rapid-antigen-tests-diagnosing-covid-19] with the following properties:
+
+- P[Test = + | Disease = +] = .82
+- PP[Test = - | Disease = -] = .995
+
+#### 4a.
+
+If the overall population prevalence was 5%, what is the probability that your roommate has COVID-19?
+
+
+```{r}
+p.t.plus <- .82
+p.t.minus <- 1 - .995
+p.theta <- .05
+p.theta.true <- p.t.plus * p.theta / (p.t.plus * p.theta + p.t.minus * (1 - p.theta))
+```
+The probability would be about `r round(p.theta.true,3)`.
+
+#### 4b.
+
+Now assume that your other roommate took a test (with the same characteristics) and that test was negative. What is the probability the other roommate has COVID-19?
+
+
+```{r}
+p.t.plus <- .82
+p.t.minus <- 1 - .995
+p.theta <- .05
+p.theta.neg <- (1 - p.t.plus) * (p.theta) / ((1 - p.t.minus) * (1- p.theta) + (1 - p.t.plus) * (p.theta))
+```
+
+The probability would be about `r round(p.theta.neg,3)`
