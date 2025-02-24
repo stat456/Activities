@@ -1,0 +1,120 @@
+---
+title: "Activity 7: key"
+format: gfm
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| include: FALSE
+library(tidyverse)
+library(rjags)
+
+```
+
+
+### Week 6 Recap: Bayesian Analysis with MCMC
+
+-   jags
+
+-   Bayesian Analysis with MCMC
+
+
+------------------------------------------------------------------------
+
+### Week 7 Overview: Normal Distribution
+
+-   Bayes Rule with data
+
+-   "Calculus"
+
+-   Bayesian Data Analysis with binary data
+
+------------------------------------------------------------------------
+
+```{r, include =F}
+library(tidyverse)
+library(rjags)
+```
+
+This analysis will focus on small dataset containing information from Indeed.com, which can be accessed using [http://www.math.montana.edu/ahoegh/teaching/stat491/data/bzn_jobs.csv](http://www.math.montana.edu/ahoegh/teaching/stat491/data/bzn_jobs.csv).
+
+```{r}
+bzn_jobs <- read_csv('http://www.math.montana.edu/ahoegh/teaching/stat491/data/bzn_jobs.csv')
+```
+
+This dataset contains the following variables:
+
+    - jobAgeDays: number of days the job has been posted on Indeed.com
+    - normTitle: name of job position (registered nurse, sales associate, truck driver)
+    - estimatedSalary: estimated annual salary
+    - localClicks: number of people clicking on job posting
+
+## Bayesian ANOVA
+For this question we will fit a regression analysis (ANOVA) to model estimated salary across three diffferent job types. variables as predictors.
+
+#### a. Data Viz
+
+Create a figure of salary by `normTitle`. It is good practice to show all data points.
+
+
+#### b.
+Interpret the following R output.
+
+```{r}
+anova_fit <- lm(estimatedSalary ~ normTitle - 1, data = bzn_jobs)
+summary(anova_fit)
+confint(anova_fit)
+```
+
+
+#### c. 
+
+Select and Justify a sampling model for your response.
+
+
+
+#### d. 
+
+Explain the purpose of this model - you can assume you talking to a freshman in high school.
+
+
+#### e. 
+State and Justify Priors Used for your  Model
+
+
+
+#### e. 
+
+Finish this JAGS code to fit the Posterior Distribution for this Model and print the results
+
+```{r}
+model_anova<- "model{
+  # Likelihood
+  for (i in 1:n){
+    y[i] ~ dnorm(beta1 * x1[i] + beta2 * x2[i] + beta3 * x3[i], 1/sigma^2) 
+  }
+  
+  # Prior
+  beta1 ~ 
+  beta2 ~ 
+  beta3 ~ 
+  sigma ~ 
+}"
+```
+
+
+#### f. 
+Visualize your results in some fashion - this can look similar to your figure in part a.
+
+
+#### g.
+
+Compare your interval results, in part f, with those from part b
+
+
+#### h.
+
+Explain the results of this model - you can assume you talking to a freshman in high school.
+
