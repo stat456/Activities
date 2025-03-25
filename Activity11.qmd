@@ -129,7 +129,9 @@ Create a data visualization to show posterior predictive distributions for Q2 an
 
 ### T-test
 
-For this question, we will use classical t-tests (and then see Bayesian analogues on Thursday).
+For this question, we will initially use classical t-tests.
+
+First write down the statistical model you are using for each of the following scenarios.
 
 Use the OK Cupid dataset and test the following claim, the mean height OK Cupid respondents reporting their body type as athletic is different than 70 inches. 
 
@@ -140,3 +142,7 @@ okc <- read_csv('http://www.math.montana.edu/ahoegh/teaching/stat408/datasets/OK
 
 
 Now consider whether there is a  height difference between  OK Cupid respondents self-reporting their body type as "athletic" and those self-reporting their body type as "fit"
+
+
+
+Next, use the idea of a ROPE and redo the previous analyses using JAGS.

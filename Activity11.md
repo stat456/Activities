@@ -113,10 +113,10 @@ data-fig-align="center" />
 HPDinterval(codaSamples[[1]])
 ```
 
-                lower      upper
-    mu    -0.08141381 0.09689337
-    nu     1.82468096 2.89972568
-    sigma  0.78041020 0.97310265
+               lower     upper
+    mu    -0.1556692 0.0422798
+    nu     2.1204858 3.9919131
+    sigma  0.8518212 1.0817187
     attr(,"Probability")
     [1] 0.95
 
@@ -157,8 +157,10 @@ model / prior selection is an accurate representation of the data.
 
 ### T-test
 
-For this question, we will use classical t-tests (and then see Bayesian
-analogues on Thursday).
+For this question, we will initially use classical t-tests.
+
+First write down the statistical model you are using for each of the
+following scenarios.
 
 Use the OK Cupid dataset and test the following claim, the mean height
 OK Cupid respondents reporting their body type as athletic is different
@@ -180,3 +182,5 @@ okc <- read_csv('http://www.math.montana.edu/ahoegh/teaching/stat408/datasets/OK
 Now consider whether there is a height difference between OK Cupid
 respondents self-reporting their body type as “athletic” and those
 self-reporting their body type as “fit”
+
+Next, use the idea of a ROPE and redo the previous analyses using JAGS.
