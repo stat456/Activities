@@ -70,7 +70,7 @@ model.string <- 'model {
 
 - Conditional on all data
 
-#### 5. Summarize inferences from model
+#### 6. Summarize inferences from model
 
 Talk about the model and discuss which and how predictor variables
 influence the observed bird count.
