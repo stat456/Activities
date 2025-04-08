@@ -1,0 +1,99 @@
+---
+title: "Activity 13"
+format: gfm
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(rjags)
+library(tidyverse)
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+Now reconsider the willow tit dataset and consider modeling not just the presence / absence of birds, but directly modeling the number of birds observed in each spatial region.
+
+
+
+```{r, fig.align='center'}
+birds <- read.csv('http://math.montana.edu/ahoegh/teaching/stat491/data/willowtit2013_count.csv')
+head(birds) |> 
+  kable()
+```
+\vfill
+
+This dataset contains 242 sites and 6 variables:  
+
+    - siteID, a unique identifier for the site, some were not sampled during this period 
+    - elev, mean elevation of the quadrant in meters 
+    - rlength, the length of the route walked by the birdwatcher, in kilometers 
+    - forest, percent forest cover 
+    - bird.count, number of birds identified 
+    - searchDuration, time birdwatcher spent searching the site, in minutes
+
+
+
+#### 1. Data Visualization
+
+Create two figures that explore `bird.count` as a function of forest cover percentage (`forest`) and elevation (`elev`).
+
+
+
+
+#### 2. Model Specification
+
+Using a Poisson regression model, clearly write out the model to understand how forest cover and elevation impact bird count.
+\vfill
+
+
+#### 3. Priors
+
+Describe and justify the necessary priors for this model.
+
+
+\vfill
+
+#### 4.  Fit MCMC
+
+Fit the JAGS code for this model. You will have to put this together following the specification in the previous examples, but the following statement can be used for the sampling model portion.
+
+
+```{r}
+model.string <- 'model {
+  for (i in 1:Ntotal) {
+    y[i] ~ dpois(mu[i])
+    mu[i] <- exp(beta0 + sum( beta[1:Nx] * x[i,1:Nx] ))
+  }
+  # priors 
+  beta0 ~ dnorm(0,1/5^2)
+  for (j in 1:Nx){
+    beta[j] ~ dnorm(0, 1/100^2)
+  }
+}'
+
+```
+
+#### 5. Use posterior predictive distribution for model checking
+
+- First extract posterior samples.
+
+
+
+- Conditional on a single 'X' value, the 113th row in the dataset
+
+
+
+- Conditional on all data 
+
+
+
+#### 5. Summarize inferences from model
+
+Talk about the model and discuss which and how predictor variables influence the observed bird count.
+
+
+
