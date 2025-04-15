@@ -1,0 +1,194 @@
+---
+title: "Activity 14: key"
+format: gfm
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| include: FALSE
+library(tidyverse)
+library(rjags)
+library(gridExtra)
+```
+
+
+### Last-Week's Recap
+
+- GLMs
+- Posterior predictive distributions
+
+
+### This week
+
+- Hierarchical Models
+
+### Next week
+
+- Project Analysis (for next Tuesday - no videos)
+- Final Exam Review (Tuesday)
+- In class exam (Thursday)
+- Take Home Exam 
+
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(rjags)
+library(runjags)
+library(tidyverse)
+library(arm)
+set.seed(04262023)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Similar to the Space Jam themed exercises previously For this activity we will use NBA free throw shooting data to compare a few different approaches for analyzing this dataset.
+
+```{r, echo = F}
+playoff.free.throws <- tibble(
+  player = c('James','Curry','Irving','Durant','Wall','Leonard','Beal','Harden','Love','Horford','Aldridge','Green','Paul','Olynyk','Parker','Favors','Jordan','Oladipo'),
+  position = c('F','G','G','F','G','G','G','G','F','F','F','F','G','F','G','F','F','G'),
+  FTA = c(162,114,84,103,93,102,61,115,75,29,55,67,33,30,14,23,56,6),
+  FTM = c(113,103,76,92,78,95,50,101,63,22,42,46,29,22,14,11,22,6)) %>% 
+  arrange(position, player) |>
+  filter(position == 'G')
+playoff.free.throws %>% kable(digits = 2)
+```
+
+---
+
+1. Fit a frequentist model to estimate free throw shooting percentage, $\theta,$ for the players Curry, Beal, and Oladipo. Write the sampling model you've assumed with your code (hint: `glm()` is one possible route). Report a point estimate and uncertainty intervals for each player.
+\vfill
+
+_$$FTM_i \sim Binomial(FTA_i, \theta_i)$$ where $i$ denotes the $i^{th}$ player and $\theta_i$ is the free throw shooting percentage for player i._
+
+```{r}
+beal <- glm(cbind(50,11)~ 1,  family = "binomial")
+curry <- glm(cbind(103,11)~ 1,  family = "binomial")
+oladipo <- glm(cbind(6,0)~ 1,  family = "binomial")
+```
+
+- Beal (50 / 61 = `r round(50/61, 2)`) MLE is `r round(invlogit(coef(beal)),2)`
+CI is (`r round(invlogit(confint(beal)),2)`) 
+
+- Curry (103/ 114 = `r round(103/114, 2)`) MLE is `r round(invlogit(coef(curry)),2)`
+CI is (`r round(invlogit(confint(curry)),2)`) 
+
+- Oladipo (6/ 6 = `r round(6/6, 2)`) MLE is `r round(invlogit(coef(oladipo)),2)`
+CI is (`r round(invlogit(confint(oladipo)),2)`) - Note other methods will result in a confidence interval of (1,1). 
+
+*The Oladipo case is obviously troubling here, but in general the philosophy of using prior information or sharing information from hierarchical models seems reasonable in this setting.*
+
+---
+
+2. Specify independent models using a uniform prior for $\theta$ for the players Curry, Beal, and Oladipo. Write the the sampling model and priors for these models. Recall you can find the posterior here analytically without using MCMC. Find posterior means and HDI intervals for this approach. Recall the HPDinterval function can be applied directly to samples from a beta distribution as `HPDinterval(mcmc(data  = rbeta(n = 5000, shape1 = a.star, shape2 = b.star)))`
+
+
+$$FTM_i \sim Binomial(FTA_i, \theta_i)$$ where $i$ denotes the $i^{th}$ player and $\theta_i$ is the free throw shooting percentage for player i.
+$\theta_i \sim Beta(1,1)$ for all i.
+
+
+- Beal (50 / 61 = `r round(50/61, 2)`) Posterior mean is `r round((50 + 1)/(50 + 1 + 11 + 1),2)`
+HPD is (`r round(HPDinterval(mcmc(data  = rbeta(n = 5000, shape1 = 50 + 1, shape2 = 11 + 1))),2)` )
+
+- Curry (103/ 114 = `r round(103/114, 2)`) Posterior mean is `r round((103 + 1)/(103 + 1 + 11 + 1),2)`
+HPD is (`r round(HPDinterval(mcmc(data  = rbeta(n = 5000, shape1 = 103 + 1, shape2 = 11 + 1))),2)` )
+
+- Oladipo (6/ 6 = `r round(6/6, 2)`) Posterior mean is `r round((6 + 1)/(6 + 1 + 0 + 1),2)`
+HPD is (`r round(HPDinterval(mcmc(data  = rbeta(n = 5000, shape1 = 6 + 1, shape2 = 0 + 1))),2)` )
+
+___
+
+3. Specify independent models using an informative prior, of your choice, for $\theta$ for the players Curry, Beal, and Oladipo. Write the the sampling model and priors for these models. Recall you can find the posterior here analytically without using MCMC. Defend your prior choice.
+\vfill
+
+$$FTM_i \sim Binomial(FTA_i, \theta_i)$$
+where $i$ denotes the $i^{th}$ player and $\theta_i$ is the free throw shooting percentage for player i.
+
+$\theta_i \sim Beta(25.5,4.5)$ for all i. This corresponds to roughly 85% free throw shooting and is weighted equivalently to taking 30 shots (and making 25.5).
+
+- Beal (50 / 61 = `r round(50/61, 2)`) Posterior mean is `r round((50 + 25.5)/(50 + 25.5 + 11 + 4.5),2)`
+HPD is (`r round(HPDinterval(mcmc(data  = rbeta(n = 5000, shape1 = 50 + 25.5, shape2 = 11 + 4.5))),2)`) 
+
+- Curry (103/ 114 = `r round(103/114, 2)`) Posterior mean is `r round((103 + 25.5)/(103 + 25.5 + 11 + 4.5),2)`
+HPD is (`r round(HPDinterval(mcmc(data  = rbeta(n = 5000, shape1 = 103 + 25.5, shape2 = 11 + 4.5))),2)` )
+
+- Oladipo (6/ 6 = `r round(6/6, 2)`) Posterior mean is `r round((6 + 25.5)/(6 + 25.5 + 0 + 4.5),2)`
+HPD is (`r round(HPDinterval(mcmc(data  = rbeta(n = 5000, shape1 = 6 + 25.5, shape2 = 0 + 4.5))),2)`)
+
+
+---
+
+4. Reflect on the differences/similarities in the credible intervals between the two different priors as well as the frequentist model. If you were going to bet on the players shooting percentages for the next season, which would you prefer?
+
+**The interval for Oladipo is obviously problematic in the frequentist case. Interestingly the typical solution can be thought of as a Bayesian solution with a uniform prior. The differences are not as large as I'd expect, particularly for Oladipo. Some of that is that the uniform prior effectively shrinks toward .5 and the point estimate ends up being $\frac{6+1}{6 + 1 +1} = \frac{7}{8}$, which is about .88 and quite close to my prior mean. I do think I prefer the informative priors in this case.**
+
+---
+
+5. Now consider a hierarchical model where
+
+$\theta_i \sim Beta(\omega*(\kappa-2)+1, (1-\omega)*(\kappa-2)+1)$ 
+$\omega \sim Beta(2.55, .45)$
+$\kappa-2 \sim Gamma(.01, .01)$
+
+Note that this specification of the Beta distribution uses a mean parameter $\omega$ and a dispersion parameter in $\kappa$.
+
+Use the JAGS code to again estimate free throw shooting percentage and uncertainty intervals for the three players.
+
+```{r}
+# Model - see page 250 in text
+modelString <- 'model {
+  for ( s in 1:Nsubj ) {
+    z[s] ~ dbin( theta[s], N[s] )
+    theta[s] ~ dbeta( omega*(kappa-2)+1, (1-omega)*(kappa-2)+1)
+  }
+  omega ~ dbeta(2.55, .45) # 85%
+  kappa <- kappaMinusTwo + 2
+  kappaMinusTwo ~ dgamma(.01, .01)
+}'
+writeLines( modelString, con='HierModel.txt')
+```
+
+```{r}
+
+# Data
+guards <- playoff.free.throws %>% filter(position == 'G')
+Nsubj <- nrow(guards)
+dataList = list(z=guards$FTM, N=guards$FTA,Nsubj = Nsubj)
+
+# RUN JAGS
+jags.hier <- jags.model( file = "HierModel.txt", 
+                         data = dataList, 
+                         n.chains = 3, 
+                         n.adapt = 50000)
+update(jags.hier, 10000)
+
+num.mcmc <- 10000
+codaSamples <- coda.samples( jags.hier, 
+                             variable.names = c('omega', 'kappa','theta'), 
+                             n.iter = num.mcmc)
+```
+
+```{r, echo = F}
+guards <- guards %>% mutate(FT.PCT  = FTM / FTA)
+cbind(guards, 
+      post.mean = colMeans((combine.mcmc(codaSamples))[,-c(1:2)]),
+                           HPDinterval(combine.mcmc(codaSamples))[-c(1:2),]) %>% 
+  kable(digits = 2)
+```
+
+Also summarize your estimates for $\omega$ and $\kappa$
+
+The mean and HPD values for omega and kappa are
+
+```{r}
+HPDinterval(combine.mcmc(codaSamples))[1:2,]
+colMeans((combine.mcmc(codaSamples))[,c(1:2)])
+
+```
+
+---
+
+6. Finally, discuss the differences in all your estimation approaches. If you had to choose one analysis: HM, Bayes with uniform priors, Bayes with informative priors, or the frequentist approach which would you choose and why?
