@@ -1,0 +1,264 @@
+---
+title: "Bayes Bonus Activity"
+format: gfm
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+
+### Road Map
+
+- Bayes can be used in any modeling scenario
+  - non-informative priors will give similar (numerical results) with Bayes interpretation
+  - there are several R packages that make easy implementation of Bayesian methods possible `brms` and `rstanarm` are two that I've used.
+- Priors naturally provide regularization, which amongst other things avoids issues like separation
+- Transformations of posterior samples, consider `log(swe)` $\rightarrow$ `swe`
+- More GLMs
+  - Any probability distribution can be used here, depending on the structure of the data
+  
+- Mixture Models and Zero inflated models
+
+- Correlated data
+
+- Spatial & temporal data
+
+- State space models
+
+- Gaussian processes
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(rstan)
+library(mnormt)
+library(plgp)
+library(reshape2)
+options(mc.cores = parallel::detectCores())
+set.seed(03112025)
+```
+
+
+
+
+
+#### GP in 1D
+
+Consider a simulated Gaussian process in 1D
+
+```{r}
+phi <- 1
+sigmasq <- 1
+n <- 50
+x <- seq(0, 10, length.out = n)
+d <- sqrt(plgp::distance(x))
+eps <- sqrt(.Machine$double.eps)
+H <- exp(-d/phi) + diag(eps, n)
+y <- rmnorm(1, rep(0,n),sigmasq * H)
+tibble(y = y, x = x) %>% ggplot(aes(y=y, x=x)) +
+  theme_bw() + ggtitle('Random realization of a GP with phi = 1 and sigmasq = 1') +
+  geom_point(size = .5)
+```
+
+We have simulated y ~ N(mu, sigmasq * H(phi)), where H(phi) is a correlation matrix from exp(-d/phi).
+
+##### STAN CODE
+Here is stan code to estimate phi, sigmasq and mu
+
+```
+data {
+  int<lower=0> N; // number of data points
+  vector[N] y; // responds
+  matrix[N,N] dist; // distance matrix
+}
+
+parameters {
+  real<lower = 0.5, upper = 9.8> phi;
+  real<lower = 0> sigmasq;
+  real mu;
+}
+
+transformed parameters{
+  vector[N] mu_vec;
+  corr_matrix[N] Sigma;
+
+  for(i in 1:N) mu_vec[i] = mu;
+  for(i in 1:(N-1)){
+   for(j in (i+1):N){
+     Sigma[i,j] = exp((-1)*dist[i,j]/ phi);
+     Sigma[j,i] = Sigma[i,j];
+   }
+ }
+ for(i in 1:N) Sigma[i,i] = 1;
+
+}
+
+model {
+  y ~ multi_normal(mu_vec ,sigmasq * Sigma);
+  phi ~ inv_gamma(10,10);
+  sigmasq ~ inv_gamma(10,10);
+  mu ~ normal(0, 10);
+}
+```
+
+```{r, cache = T, results = 'hide'}
+
+GP_params <- stan("GP1d.stan",
+                  data=list(N = n,
+                            y = y,
+                            dist = d),
+                  iter = 5000)
+
+```
+
+```{r}
+print(GP_params, pars = c('phi', 'mu','sigmasq'))
+```
+
+
+#### GP regression in 1D
+
+Now add a covariate
+
+```{r}
+phi <- 1
+sigmasq <- 1
+n <- 50
+x <- seq(0, 10, length.out = n)
+beta <- 1
+d <- sqrt(plgp::distance(x))
+eps <- sqrt(.Machine$double.eps)
+H <- exp(-d/phi) + diag(eps, n)
+y <- rmnorm(1, x * beta,sigmasq * H)
+reg_fig <- tibble(y = y, x = x) %>% ggplot(aes(y=y, x=x)) +
+  theme_bw() + ggtitle('Random realization of a GP with phi = 1 and sigmasq = 1') +
+  geom_point(size = .5)
+reg_fig
+```
+
+We have simulated y ~ N(mu, sigmasq * H(phi)), where H(phi) is a correlation matrix from exp(-d/phi).
+
+##### STAN CODE
+
+```
+data {
+  int<lower=0> N; // number of data points
+  vector[N] y; // response
+  matrix[N,N] dist; // distance matrix
+  vector[N] x; // covariate
+}
+
+parameters {
+  real<lower = 0.5, upper = 9.8> phi;
+  real<lower = 0> sigmasq;
+  real beta;
+}
+
+transformed parameters{
+  vector[N] mu_vec;
+  corr_matrix[N] Sigma;
+
+  for(i in 1:N) mu_vec[i] = x[i] * beta;
+  for(i in 1:(N-1)){
+   for(j in (i+1):N){
+     Sigma[i,j] = exp((-1)*dist[i,j]/ phi);
+     Sigma[j,i] = Sigma[i,j];
+   }
+ }
+ for(i in 1:N) Sigma[i,i] = 1;
+
+}
+
+model {
+  y ~ multi_normal(mu_vec ,sigmasq * Sigma);
+  phi ~ inv_gamma(10,10);
+  sigmasq ~ inv_gamma(10,10);
+  beta ~ normal(0, 10);
+}
+
+```
+
+
+```{r, cache = T, results = 'hide'}
+ 
+
+Reg_params <- stan("GP_reg.stan",
+                  data=list(N = n,
+                            y = y,
+                            x = x,
+                            dist = d),
+                  iter = 5000)
+
+
+```
+
+```{r}
+print(Reg_params, pars = c('phi', 'beta','sigmasq'))
+```
+
+
+##### Making Predictions
+
+```{r}
+beta_hat <- summary(Reg_params, pars = 'beta')$summary[1]
+sigmasq_hat <- summary(Reg_params, pars = 'sigmasq')$summary[1]
+phi_hat <- summary(Reg_params, pars = 'phi')$summary[1]
+xnew <- seq(-1, 11, .025)
+n_pred <- length(xnew)
+d1 <- sqrt(plgp::distance(xnew))
+Sigma11 <- sigmasq_hat * exp(-d1/phi_hat) + diag(eps, n_pred)
+d12 <- sqrt(plgp::distance(xnew,x))
+Sigma12 <- sigmasq_hat * exp(-d12/phi_hat)
+Sigma22 <- sigmasq_hat * exp(-d/phi_hat) + diag(eps, n)
+
+mu_1given2 <- xnew * beta_hat + Sigma12 %*% solve(Sigma22) %*% matrix(y - x * beta_hat, nrow = length(y), ncol = 1)
+Sigma_1given2 <- Sigma11 - Sigma12 %*% solve(Sigma22) %*% t(Sigma12)
+```
+
+\vfill
+
+```{r, echo = F}
+mean_line <- tibble(y_mean = mu_1given2, xnew = xnew)
+data_and_mean <- reg_fig +
+  geom_line(aes(y = y_mean, x = xnew), inherit.aes = F, data = mean_line, color = 'gray') +
+  geom_point() + ggtitle("Observed Data + Conditional Mean")
+data_and_mean
+```
+
+```{r}
+num_sims <- 100
+y1_sims <- rmnorm(num_sims, mu_1given2, Sigma_1given2  )
+
+long_sims <- y1_sims %>% melt() %>% bind_cols(tibble(x = rep(xnew, each = num_sims)))
+
+data_and_mean +
+  geom_line(aes(y = value, x = x, group = Var1), inherit.aes = F,
+            data = long_sims, alpha = .1, color = 'gray') +
+  ggtitle('Observed Data + 100 GP Realizations + lm fit') + geom_point() + geom_smooth(method ='lm', formula = 'y~x', se = F) +
+  geom_line(aes(y = y_mean, x = xnew), inherit.aes = F, data = mean_line, color = 'black', linetype = 3)
+
+```
+
+
+### Geostatistical Data
+Simulated 2-d "spatial" data.
+
+```{r}
+#set.seed(03062025)
+
+dim.grid <- 50
+grid.coords <- data.frame(x.grid = rep(seq(.05, .95, length.out=dim.grid), dim.grid),
+  y.grid = rep(seq(.05, .95, length.out = dim.grid), each = dim.grid))
+
+dist.grid <- sqrt(plgp::distance(grid.coords))
+
+sigma.sq <- 1
+phi <- .1
+Sigma <- sigma.sq * exp(- dist.grid/phi) + diag(eps, dim.grid ^ 2) 
+
+Y <- rmnorm(n=1, mean = 0, varcov = Sigma  )
+
+grid.coords %>% mutate(Y = Y) %>% ggplot(aes(x=x.grid,y=y.grid)) + geom_point(aes(color=Y), size=3) + ggtitle('Simulated Spatial Process', subtitle = 'Exponential Covariance: sigma.sq = 1, phi = .1') + xlim(0,1) + ylim(0,1) +   scale_colour_gradient2() + theme_dark()
+```
+
